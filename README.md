@@ -25,7 +25,7 @@
 
 ## 설치
 
-Python 3.10 이상, `python-telegram-bot` 20.8 이상이 필요하다.
+Python 3.10 이상과 [uv](https://docs.astral.sh/uv/)가 필요하다.
 
 1. [@BotFather](https://t.me/BotFather)에서 봇을 만들고 토큰을 받는다.
 2. `/setprivacy`에서 해당 봇을 **Disable**로 설정한다. 이미 그룹에 있던 봇은 다시 초대해야 적용된다.
@@ -34,10 +34,11 @@ Python 3.10 이상, `python-telegram-bot` 20.8 이상이 필요하다.
 ```bash
 git clone https://github.com/gw1021/telegram-link-fixer.git
 cd telegram-link-fixer
-python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
-BOT_TOKEN=123456:ABC... ./venv/bin/python link_fixer_bot.py
+uv sync
+BOT_TOKEN=123456:ABC... uv run python link_fixer_bot.py
 ```
+
+`uv sync`가 프로젝트의 `.venv`와 필요한 의존성을 관리한다.
 
 ## 환경변수
 
@@ -46,6 +47,13 @@ BOT_TOKEN=123456:ABC... ./venv/bin/python link_fixer_bot.py
 | `BOT_TOKEN` | O | BotFather 토큰 |
 
 ## systemd
+
+먼저 프로젝트 디렉터리에서 의존성을 동기화한다.
+
+```bash
+cd /home/pi/telegram-link-fixer
+uv sync
+```
 
 `/etc/linkfixer/env` (권한 `600`):
 
@@ -65,7 +73,7 @@ Wants=network-online.target
 User=pi
 WorkingDirectory=/home/pi/telegram-link-fixer
 EnvironmentFile=/etc/linkfixer/env
-ExecStart=/home/pi/telegram-link-fixer/venv/bin/python link_fixer_bot.py
+ExecStart=/home/pi/telegram-link-fixer/.venv/bin/python link_fixer_bot.py
 Restart=always
 RestartSec=5
 
