@@ -1,0 +1,8 @@
+[project]
+name = "telegram-link-fixer"
+version = "0.1.0"
+description = "Telegram bot that cleans tracking parameters and fixes social media preview links"
+requires-python = ">=3.10"
+dependencies = [
+    "python-telegram-bot>=20.8",
+]
