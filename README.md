@@ -40,11 +40,11 @@ Python 3.10 이상과 [uv](https://docs.astral.sh/uv/)가 필요하다.
 ```bash
 git clone https://github.com/gw1021/telegram-link-fixer.git
 cd telegram-link-fixer
-uv sync
-BOT_TOKEN=123456:ABC... uv run python link_fixer_bot.py
+uv sync --locked
+BOT_TOKEN=123456:ABC... uv run --locked python link_fixer_bot.py
 ```
 
-`uv sync`가 프로젝트의 `.venv`와 필요한 의존성을 관리한다.
+`uv.lock`을 저장소에 포함해 의존성 버전을 고정한다. `uv sync --locked`는 잠금 파일에 기록된 버전으로 `.venv`를 준비하고, `pyproject.toml`과 잠금 파일이 맞지 않으면 설치를 중단한다.
 
 ## 환경변수
 
@@ -58,7 +58,7 @@ BOT_TOKEN=123456:ABC... uv run python link_fixer_bot.py
 
 ```bash
 cd /home/pi/telegram-link-fixer
-uv sync
+uv sync --locked
 ```
 
 `/etc/linkfixer/env` (권한 `600`):
@@ -92,6 +92,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now linkfixer
 journalctl -u linkfixer -f
 ```
+
+HTTP 요청의 상세 로그는 기본적으로 출력하지 않으며, 애플리케이션 로그와 예외 traceback에 포함된 봇 토큰은 `<redacted>`로 가린다.
+
+## 개발 및 검증
+
+```bash
+uv sync --locked
+uv run --locked python -m unittest discover -s tests -v
+```
+
+실행 코드는 `link_fixer_bot.py` 한 파일로 유지하고 역할을 함수로 나눈다.
+
+- `fix_url()`, `collect_links()`: URL 검증·변환과 전체 링크 보존
+- `format_author()`, `build_message()`: 작성자 표기와 전송할 HTML 생성
+- `handle()`: Telegram 메시지 전송과 성공 후 원본 삭제
+- `main()`, `configure_logging()`: 토큰 검사, 로그 설정, 봇 실행
+
+모듈을 import할 때는 토큰이 필요 없고 로깅 설정도 바꾸지 않는다. 테스트는 외부 Telegram 연결 없이 사이트별 URL 규칙, 작성자 표기, 전송·삭제 실패, 시작 설정과 로그의 토큰 가림을 검증한다.
+
+의존성을 업데이트할 때는 `uv lock --upgrade`로 잠금 파일을 갱신하고 테스트한 뒤 `uv.lock`을 함께 커밋한다. 서버에서도 `uv sync --locked` 후 봇 서비스를 재시작한다.
 
 ## 규칙 수정
 

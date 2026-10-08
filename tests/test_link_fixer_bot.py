@@ -1,14 +1,12 @@
-import os
 import unittest
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import create_autospec, patch
+from unittest.mock import create_autospec
 
 from telegram import Bot, Chat, Message, PhotoSize, Update, User
 from telegram.error import BadRequest, Forbidden, TimedOut
 
-with patch.dict(os.environ, {"BOT_TOKEN": "123:test"}):
-    import link_fixer_bot
+import link_fixer_bot
 
 
 SOURCE = "https://x.com/alice/status/123?utm_source=test"
