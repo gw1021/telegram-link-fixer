@@ -25,12 +25,25 @@ IGNORE_HOSTS = {"t.me", "telegram.me"}
 RULES = {
     "twitter.com": {"host": "fixupx.com", "keep": set(), "path_re": r"^/\w+/status/\d+"},
     "x.com": {"host": "fixupx.com", "keep": set(), "path_re": r"^/\w+/status/\d+"},
-    "instagram.com": {"host": "kkinstagram.com", "keep": set(), "path_re": r"^/(p|reel|reels|tv)/"},
-    "tiktok.com": {"host": "vxtiktok.com", "keep": set(), "path_re": r"^/@[^/]+/video/\d+"},
-    "reddit.com": {"host": "rxddit.com", "keep": set(), "path_re": r"^/r/\w+/comments/"},
+    "instagram.com": {
+        "host": "oginstagram.com", "keep": {"img_index"},
+        "path_re": r"^/(?:[A-Za-z0-9._]+/)?(?:p|reel|reels)/[A-Za-z0-9_-]+(?:/[1-9][0-9]*)?/?$",
+    },
+    "tiktok.com": {
+        "host": "tnktok.com", "keep": set(),
+        "path_re": r"^/(?:@[^/]+/(?:video|photo)/[0-9]+|t/[A-Za-z0-9]+)/?$",
+    },
+    "vm.tiktok.com": {"host": "tnktok.com", "keep": set(), "path_re": r"^/[A-Za-z0-9]+/?$"},
+    "reddit.com": {
+        "host": "vxreddit.com", "keep": set(),
+        "path_re": r"^/r/[A-Za-z0-9_]+/(?:comments/[A-Za-z0-9]+(?:/.*)?|s/[A-Za-z0-9]+/?)$",
+    },
+    "redd.it": {"host": "vxreddit.com", "keep": set(), "path_re": r"^/[A-Za-z0-9]+/?$"},
     "youtube.com": {"keep": {"v", "list", "t"}},
     "youtu.be": {"keep": {"t"}},
 }
+
+HOST_ALIASES = {"vt.tiktok.com": "vm.tiktok.com", "old.reddit.com": "reddit.com"}
 
 # 규칙 없는 사이트에서 제거할 일반 추적 파라미터 (소문자 비교)
 TRACKING_PREFIXES = ("utm_",)
@@ -64,7 +77,7 @@ def normalize_host(host: str) -> str:
     for prefix in ("www.", "mobile.", "m."):
         if host.startswith(prefix):
             host = host[len(prefix):]
-    return host
+    return HOST_ALIASES.get(host, host)
 
 
 def fix_url(url: str) -> str | None:
@@ -79,11 +92,15 @@ def fix_url(url: str) -> str | None:
     if parts.scheme not in {"http", "https"} or not host or host in IGNORE_HOSTS:
         return None
 
+    path = parts.path
+    if host == "instagram.com":
+        # OGInstagram은 옛 IGTV 경로를 받지 않으므로 같은 게시물 ID를 /p/로 보낸다.
+        path = re.sub(r"^(/(?:[A-Za-z0-9._]+/)?)tv/", r"\1p/", path)
     query = parse_qsl(parts.query, keep_blank_values=True)
     rule = RULES.get(host)
 
     if rule:
-        if "path_re" in rule and not re.match(rule["path_re"], parts.path):
+        if "path_re" in rule and not re.match(rule["path_re"], path):
             return None
         new_host = rule.get("host")
         new_query = [(k, v) for k, v in query if k.lower() in rule["keep"]]
@@ -101,7 +118,7 @@ def fix_url(url: str) -> str | None:
 
     scheme = "https" if new_host else parts.scheme
     netloc = new_host or parts.netloc
-    return urlunsplit((scheme, netloc, parts.path, urlencode(new_query), parts.fragment))
+    return urlunsplit((scheme, netloc, path, urlencode(new_query), parts.fragment))
 
 
 def collect_links(text: str) -> tuple[list[str], list[str]] | None:

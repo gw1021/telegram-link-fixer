@@ -14,12 +14,45 @@ class UrlTests(unittest.TestCase):
             ("https://x.com/alice/status/123?s=20", "https://fixupx.com/alice/status/123"),
             ("http://www.twitter.com/alice/status/123?ref_src=test", "https://fixupx.com/alice/status/123"),
             ("https://mobile.twitter.com/alice/status/123/photo/1", "https://fixupx.com/alice/status/123/photo/1"),
-            ("https://m.instagram.com/p/ABC/?igsh=tracking", "https://kkinstagram.com/p/ABC/"),
-            ("https://instagram.com/reel/ABC/?utm_source=test", "https://kkinstagram.com/reel/ABC/"),
-            ("https://instagram.com/reels/ABC/", "https://kkinstagram.com/reels/ABC/"),
-            ("https://instagram.com/tv/ABC/", "https://kkinstagram.com/tv/ABC/"),
-            ("https://www.tiktok.com/@alice/video/123?lang=ko", "https://vxtiktok.com/@alice/video/123"),
-            ("https://www.reddit.com/r/python/comments/abc/title/?utm_source=test", "https://rxddit.com/r/python/comments/abc/title/"),
+            ("https://m.instagram.com/p/ABC/?igsh=tracking", "https://oginstagram.com/p/ABC/"),
+            ("https://instagram.com/reel/ABC/?utm_source=test", "https://oginstagram.com/reel/ABC/"),
+            ("https://instagram.com/reels/ABC/", "https://oginstagram.com/reels/ABC/"),
+            ("https://instagram.com/tv/ABC/", "https://oginstagram.com/p/ABC/"),
+            ("https://instagram.com/alice.tv/tv/ABC/", "https://oginstagram.com/alice.tv/p/ABC/"),
+            ("https://instagram.com/alice/reel/ABC/", "https://oginstagram.com/alice/reel/ABC/"),
+            ("https://www.tiktok.com/@alice/video/123?lang=ko", "https://tnktok.com/@alice/video/123"),
+            ("https://tiktok.com/@alice/photo/123?is_from_webapp=1", "https://tnktok.com/@alice/photo/123"),
+            ("https://www.reddit.com/r/python/comments/abc/title/?utm_source=test", "https://vxreddit.com/r/python/comments/abc/title/"),
+        ]
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(fix_url(source), expected)
+
+    def test_instagram_keeps_selected_carousel_item_without_tracking(self):
+        self.assertEqual(
+            fix_url("https://www.instagram.com/alice/p/ABC/?igsh=tracking&img_index=3&utm_source=share#item"),
+            "https://oginstagram.com/alice/p/ABC/?img_index=3#item",
+        )
+        self.assertEqual(
+            fix_url("https://instagram.com/p/ABC/2/?igsh=tracking"),
+            "https://oginstagram.com/p/ABC/2/",
+        )
+
+    def test_tiktok_short_links_use_the_provider_short_link_routes(self):
+        cases = [
+            ("https://vm.tiktok.com/ZMabc123/?share_item_id=456", "https://tnktok.com/ZMabc123/"),
+            ("https://vt.tiktok.com/ZSabc123", "https://tnktok.com/ZSabc123"),
+            ("https://www.tiktok.com/t/ZTabc123/?_t=tracking", "https://tnktok.com/t/ZTabc123/"),
+        ]
+        for source, expected in cases:
+            with self.subTest(source=source):
+                self.assertEqual(fix_url(source), expected)
+
+    def test_reddit_short_links_and_old_domain_keep_the_post_or_comment(self):
+        cases = [
+            ("https://reddit.com/r/python/s/AbC123?utm_source=share", "https://vxreddit.com/r/python/s/AbC123"),
+            ("https://redd.it/abc123?utm_medium=share", "https://vxreddit.com/abc123"),
+            ("https://old.reddit.com/r/python/comments/abc/title/def/?context=3", "https://vxreddit.com/r/python/comments/abc/title/def/"),
         ]
         for source, expected in cases:
             with self.subTest(source=source):
@@ -52,7 +85,15 @@ class UrlTests(unittest.TestCase):
             "https://t.me/example/1?utm_source=test", "https://telegram.me/example?si=test",
             "https://x.com/alice", "https://instagram.com/share/abc/?igsh=test",
             "https://instagram.com/alice/", "https://tiktok.com/@alice",
-            "https://reddit.com/r/python/",
+            "https://reddit.com/r/python/", "https://instagram.com/p/",
+            "https://tiktok.com/t/", "https://tiktok.com/@alice/video/123oops",
+            "https://vm.tiktok.com/", "https://vt.tiktok.com/@alice",
+            "https://reddit.com/r/python/s/", "https://redd.it/",
+            "https://instagram.com.example.com/p/ABC/",
+            "https://vt.tiktok.com.example.com/ZSabc123/",
+            "https://old.reddit.com.example.com/r/python/comments/abc/",
+            "https://oginstagram.com/p/ABC/?img_index=2",
+            "https://tnktok.com/@alice/video/123", "https://vxreddit.com/r/python/s/AbC123",
         ]
         for source in sources:
             with self.subTest(source=source):

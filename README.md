@@ -7,13 +7,17 @@
 | 대상 | 변환 |
 |---|---|
 | X / Twitter (`/user/status/id`) | `fixupx.com`, 쿼리 제거 |
-| Instagram (`/p/`, `/reel/`, `/reels/`, `/tv/`) | `kkinstagram.com`, 쿼리 제거 |
-| TikTok (`/@user/video/id`) | `vxtiktok.com`, 쿼리 제거 |
-| Reddit (`/r/sub/comments/...`) | `rxddit.com`, 쿼리 제거 |
+| Instagram (`/p/`, `/reel/`, `/reels/`, `/tv/`, 사용자명이 앞에 있는 게시물 경로) | `oginstagram.com`, 사진 선택용 `img_index` 유지. 옛 `/tv/`는 `/p/`로 변환 |
+| TikTok (`/@user/video/id`, `/@user/photo/id`, `/t/code`, `vm.tiktok.com/code`, `vt.tiktok.com/code`) | `tnktok.com`, 쿼리 제거 |
+| Reddit (`/r/sub/comments/...`, `/r/sub/s/code`, `redd.it/id`, `old.reddit.com` 게시물) | `vxreddit.com`, 쿼리 제거 |
 | YouTube / youtu.be | `v`, `list`, `t`만 유지 |
 | 그 외 | `utm_*`, `fbclid`, `gclid`, `igshid`, `si` 등 추적 파라미터 제거 |
 
 `t.me` 링크와 다른 봇의 메시지는 무시한다. **URL만 있는 메시지**만 처리하며, 문장 속에 섞인 링크는 건드리지 않는다.
+
+TikTok과 Reddit의 짧은 링크는 임베드 서비스가 해석한다. 봇은 URL만 변환하며 별도 HTTP 요청을 추가하지 않는다. Instagram은 `img_index`와 경로 끝의 `/2` 같은 사진 선택을 보존한다.
+
+사용 서비스: [FxTwitter](https://github.com/FixTweet/FxTwitter), [OGInstagram](https://github.com/seirenkr/OGInstagram), [fxTikTok](https://github.com/okdargy/fxTikTok), [vxReddit](https://github.com/dylanpdx/vxReddit). Instagram의 수동 교체 후보로는 [Instagramfix](https://instagramfix.com/)가 있으며, 자동 장애 전환은 구현하지 않는다.
 
 ## 동작
 
@@ -124,6 +128,8 @@ uv run --locked python -m unittest discover -s tests -v
 - `host`: 교체할 도메인 (생략 시 유지)
 - `keep`: 남길 쿼리 파라미터 (소문자)
 - `path_re`: 이 경로일 때만 적용 (생략 시 전체)
+
+동일한 규칙을 쓰는 원본 도메인은 `HOST_ALIASES`에 추가한다. 별도 경로 변환이 필요한 경우 `fix_url()`의 경로 정규화 부분도 수정한다.
 
 규칙이 없는 사이트에서 제거할 파라미터는 `TRACKING_EXACT`, `TRACKING_PREFIXES`에 추가한다.
 
